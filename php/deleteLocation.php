@@ -40,7 +40,7 @@
 	}
 
 	// Safe to delete
-	$deleteQuery = $conn->prepare('DELETE FROM location WHERE id = ?');
+	$deleteQuery = $conn->prepare('DELETE FROM `location` WHERE id = ?');		
 	$deleteQuery->bind_param("i", $_REQUEST['id']);
 	$deleteQuery->execute();
 
