@@ -9,16 +9,25 @@ document.addEventListener('DOMContentLoaded', function () {
     // Handle tab switching
     document.getElementById('personnelBtn').addEventListener('click', () => {
         currentTab = 'personnel';
+        document.getElementById('multiplefiltersBtn').style.display = 'block';
+        document.querySelectorAll('#filterForPerson select').forEach(select => {
+            select.selectedIndex = 0;
+        });
         loadPersonnel();
     });
 
     document.getElementById('departmentsBtn').addEventListener('click', () => {
         currentTab = 'departments';
+        document.getElementById('multiplefiltersBtn').style.display = 'block';
+        document.querySelectorAll('#filterForDepartment select').forEach(select => {
+            select.selectedIndex = 0;
+        });
         loadDepartments();
     });
 
     document.getElementById('locationsBtn').addEventListener('click', () => {
         currentTab = 'locations';
+        document.getElementById('multiplefiltersBtn').style.display = 'none';
         loadLocations();
     });
 
@@ -84,6 +93,90 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
     });
+
+    // -----------------------------------------------------
+    document.getElementById('multiplefiltersBtn').addEventListener('click', function () {
+
+        if (document.getElementById('personnelBtn')?.classList.contains('active')) {
+
+            // Fetch departments for dropdown
+            fetch('php/getAllDepartments.php')
+                .then(res => res.json())
+                .then(data => {
+                    const select = document.getElementById('all-departments');
+                    if (select && Array.isArray(data.data)) {
+                        // select.innerHTML = ''; // Clear previous
+                        const emptyOption = document.createElement('option');
+                        emptyOption.value = '';
+                        emptyOption.textContent = 'Select Department';
+                        select.appendChild(emptyOption);
+                        data.data.forEach(dept => {
+                            const option = document.createElement('option');
+                            option.value = dept.name;
+                            option.textContent = dept.name;
+                            select.appendChild(option);
+                        });
+                    }
+                })
+                .catch(err => console.error('Error fetching departments:', err));
+
+            // Fetch locations for dropdown
+            fetch('php/locations.php?action=get')
+                .then(res => res.json())
+                .then(data => {
+                    const select = document.getElementById('all-locations');
+                    if (select && Array.isArray(data.data)) {
+                        const emptyOption = document.createElement('option');
+                        emptyOption.value = '';
+                        emptyOption.textContent = 'Select Location';
+                        select.appendChild(emptyOption);
+                        data.data.forEach(loc => {
+                            const option = document.createElement('option');
+                            option.value = loc.name;
+                            option.textContent = loc.name;
+                            select.appendChild(option);
+                        });
+                    }
+                })
+                .catch(err => console.error('Error fetching locations:', err));
+
+            // Open modal
+            const modalEl = document.getElementById('filterForPerson');
+            if (modalEl) {
+                new bootstrap.Modal(modalEl).show();
+            }
+        }
+
+
+        else if (document.getElementById('departmentsBtn').classList.contains('active')) {
+
+
+            //Action is changed
+            fetch('php/locations.php?action=get')
+                .then(res => res.json())
+                .then(data => {
+                    const select = document.getElementById('all-locations-department');
+                    // select.innerHTML = '';
+                    const emptyOption = document.createElement('option');
+                    emptyOption.value = '';
+                    emptyOption.textContent = 'Select Department';
+                    select.appendChild(emptyOption);
+                    console.log(data);
+                    data.data.forEach(loc => {
+                        const option = document.createElement('option');
+                        option.value = loc.name;
+                        option.text = loc.name;
+                        select.appendChild(option);
+                    });
+                });
+
+            new bootstrap.Modal(document.getElementById('filterForDepartment')).show();
+        }
+
+    });
+    // -----------------------------------------------------
+
+
     // ============================
     // REFRESH button
     // ============================
@@ -123,6 +216,76 @@ document.addEventListener('DOMContentLoaded', function () {
                 row.style.display = 'none';
             }
         });
+
+    });
+
+    document.getElementById('apply_on_personal')?.addEventListener('click', () => {
+        const departmentSelect = document.getElementById('all-departments');
+        const locationSelect = document.getElementById('all-locations');
+        const department = departmentSelect?.value.trim().toLowerCase() || '';
+        const location = locationSelect?.value.trim().toLowerCase() || '';
+
+        // Decide which table to filter
+        let tableBody = null;
+        if (currentTab === 'personnel') {
+            tableBody = document.getElementById('personnelTableBody');
+        } else if (currentTab === 'departments') {
+            tableBody = document.getElementById('departmentTableBody');
+        } else if (currentTab === 'locations') {
+            tableBody = document.getElementById('locationTableBody');
+        }
+
+        if (!tableBody) return; // Exit if tableBody is invalid
+
+        // Loop through all rows in the selected table
+        Array.from(tableBody.getElementsByTagName('tr')).forEach(row => {
+            const rowText = row.innerText.toLowerCase();
+
+            const matchesDepartment = department && rowText.includes(department);
+            const matchesLocation = location && rowText.includes(location);
+
+            // Show row if either matches or if no filters are applied
+            if ((department && location && matchesDepartment && matchesLocation) || // Both selected & both match
+                (department && !location && matchesDepartment) ||                  // Only department selected
+                (!department && location && matchesLocation)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        document.getElementById('cancel_personal')?.click();
+    });
+
+    document.getElementById('apply_on_department')?.addEventListener('click', () => {
+
+        const locationSelect = document.getElementById('all-locations-department');
+        const location = locationSelect?.value.trim().toLowerCase() || '';
+
+        // Decide which table to filter
+        let tableBody = null;
+        if (currentTab === 'personnel') {
+            tableBody = document.getElementById('personnelTableBody');
+        } else if (currentTab === 'departments') {
+            tableBody = document.getElementById('departmentTableBody');
+        } else if (currentTab === 'locations') {
+            tableBody = document.getElementById('locationTableBody');
+        }
+
+        if (!tableBody) return; // Exit if tableBody is invalid
+
+        // Loop through all rows in the selected table
+        Array.from(tableBody.getElementsByTagName('tr')).forEach(row => {
+            const rowText = row.innerText.toLowerCase();
+            const matchesLocation = location && rowText.includes(location);
+
+            // Show row if either matches or if no filters are applied
+            if (location && matchesLocation) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        document.getElementById('cancel_department')?.click();
     });
 
     // Load all personnel
@@ -306,7 +469,7 @@ document.addEventListener('DOMContentLoaded', function () {
             alert('Please enter location name');
             return;
         }
-// action is changed
+        // action is changed
         fetch(`php/locations.php?action=add&name=${encodeURIComponent(name)}`)
             .then(res => res.json())
             .then(data => {
@@ -550,7 +713,7 @@ document.getElementById('editPersonnelModal').addEventListener('show.bs.modal', 
 document.getElementById('editDepartmentModal').addEventListener('show.bs.modal', function (event) {
     const button = event.relatedTarget;
     const deptId = button.getAttribute('data-id');
-// Added additional code for selectbox
+    // Added additional code for selectbox
     fetch(`php/getDepartmentByID.php?id=${deptId}`)
         .then(response => response.json())
         .then(data => {
