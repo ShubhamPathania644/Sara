@@ -189,8 +189,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // ============================
     // FILTER button
     // ============================
-    document.getElementById('filterBtn').addEventListener('click', () => {
-        const searchTerm = document.getElementById('searchInp').value.trim().toLowerCase();
+
+    document.getElementById('searchInp').addEventListener('input', function () {
+
+        const searchTerm = this.value.trim().toLowerCase();
 
         // Decide which table to filter
         let tableBody;
